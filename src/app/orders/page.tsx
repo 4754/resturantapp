@@ -1,10 +1,12 @@
 "use client"
 import { OrderType } from "@/types/types";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React from "react";
+import {toast} from 'react-toastify';
+
 
 const OrdersPage = () => {
 
@@ -25,8 +27,34 @@ const OrdersPage = () => {
       ),
   })
 
-  if (isPending || status === "loading") return 'Loading...'
+  const queryClient = useQueryClient();
 
+  const mutation =useMutation({
+    mutationFn: ({id,status}:{id:string, status:string}) => {
+      return fetch(`http://localhost:3000/api/orders/${id}`,{
+        method: "PUT",
+        headers: {
+          "content-type": "application/json"
+        },
+        body:JSON.stringify (status),
+      })
+    },
+    onSuccess(){
+       queryClient.invalidateQueries({ queryKey: ["orders"]});
+    },
+  });
+
+  
+  const handleUpdate = (e:React.FormEvent<HTMLFormElement>, id:string) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const input = form.elements[0] as HTMLInputElement;
+    const status = input.value;
+    mutation.mutate({id,status});
+    toast.success("The Order Status has been chanded");
+  };
+
+  if (isPending || status === "loading") return 'Loading...';
   return (
     <div className="p-4 lg:px-20 xl:px-40">
       <table className="w-full border-separate border-spacing-3">
@@ -43,7 +71,7 @@ const OrdersPage = () => {
 
           {
             data.map((item: OrderType) => (
-              <tr className="text-sm md:text-base bg-red-50" key={item.id}>
+              <tr className={`text-sm md:text-base ${item.status !== "delivered" && "bg-red-50"}`} key={item.id}>
                 <td className="hidden md:block py-6 px-1">{item.id}</td>
                 <td className="py-6 px-1">{item.createdAt.toString().slice(0, 10)}</td>
                 <td className="py-6 px-1">{item.price}</td>
@@ -54,7 +82,7 @@ const OrdersPage = () => {
                 {
                   session?.user.isAdmin ? (
                     <td>
-                      <form className="flex items-center justify-center gap-4" >
+                      <form className="flex items-center justify-center gap-4" onSubmit={(e)=> handleUpdate(e,item.id)} >
                         <input placeholder={item.status} className="p-2 ring-1 ring-red-100 rounded- md" />
                         <button className="bg-red-400 p-2 rounded-full">
                           <Image src="/edit.png" alt="" width={20} height={20}/>
