@@ -14,7 +14,7 @@ export type ProductType = {
     title: string;
     desc?: string;
     img?: string;
-    price: string;
+    price: number;
     options?: { title: string; additionalPrice: number}[];
 };
 
