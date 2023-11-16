@@ -17,7 +17,11 @@ const Price = ({ product }: { product: ProductType }) => {
   const [quantity, setQuantity] = useState(1);
   const [selected, setSelected] = useState(0);
 
-  const { addToCart } = useCartStore()
+  const { addToCart } = useCartStore();
+  
+  useEffect(()=>{
+    useCartStore.persist.rehydrate();
+  },[])
 
   useEffect(() => {
     if (product.options?.length) {
